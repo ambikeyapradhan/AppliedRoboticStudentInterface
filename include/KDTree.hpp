@@ -123,3 +123,4 @@ class KDTree {
         const point_t &pt,          //
         const double &rad);
 };
+

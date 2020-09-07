@@ -402,5 +402,3 @@ class clipperException : public std::exception
 } //ClipperLib namespace
 
 #endif //clipper_hpp
-
-

@@ -8,6 +8,7 @@
 #include <vector>
 #include <math.h>
 #include "Utils.hpp"
+#include "mission_apis.hpp"
 
 //Map object colours - BGR
 cv::Scalar robot_colour(255,0,0);   //blue
@@ -22,24 +23,12 @@ struct img_map_def{
     float scale;
     float coord_trans;
 };
-//Struct for ellipse calculations
-struct arc_param{
-    double start_angle;
-    double end_angle;
-};
 
-int TO_CM = 100;    //Transform from m to cms
 
-// /* Safe acos function -------------------------------------*/
-// double SafeAcos (double x){
-//   if (x < -1.0) x = -1.0 ;
-//   else if (x > 1.0) x = 1.0 ;
-//   return acos (x) ;
-// }
+double TO_CM = 100.0;    //Transform from m to cms
 
-/* Initialize map-------------------------------------------*/
-
-img_map_def initialize_img_map(double map_w, double map_h, double img_map_w){
+img_map_def
+ initialize_img_map(double map_w, double map_h, double img_map_w){
     // Initialize the map parameters for the visual representation of points, dubins curves
     // and polygons 
     
@@ -50,6 +39,7 @@ img_map_def initialize_img_map(double map_w, double map_h, double img_map_w){
     cv::Mat img_map = cv::Mat::zeros(scale*map_h*TO_CM, img_map_w, CV_8UC3); //create empty map
 
     img_map_def result = {img_map, scale, coord_trans};
+
     return result;
 }
 
@@ -104,95 +94,6 @@ void draw_polygon(Polygon poly, img_map_def img_map_def, cv::Scalar colour = pol
     fillPoly(img_map_def.img_map, v_poly_scaled, colour);
 }
 
-
-/* Calculate arc parameters for cv::ellipse function ---------------------------------*/
-
-arc_param calculate_arc_drawing_angles(arc_extract arc){   
-    
-    double RAD2DEG = 180.0/M_PI;
-    double start_angle, end_angle;
-    double alpha, beta;
-    Point s,e; //start and end point copies
-    double d_x; //diff btw start point and center in x coordinates
-    int quadrant;    
-
-    //space
-    //std::cout << "" << std::endl;
-    
-    // Calculate alpha = angle btw start and end point
-    alpha = (arc.length/arc.radius)*RAD2DEG; 
-
-    //std::cout << "ALPHA:"<< alpha << std::endl;
-
-    //Copy of start and end point
-    if(arc.start_point.x < arc.end_point.x){        
-        //End point becomes the start point due to how cv::ellipse works
-        s = arc.end_point;
-        e = arc.start_point;
-    }
-    else{
-        s = arc.start_point;
-        e = arc.end_point; 
-    }
-    d_x = abs((s.x - arc.center.x)*10000); //abs return int
-    d_x = d_x/10000; //d_x round to the 5th decimal (to increase smoothness of representation)
-    
-    
-    // std::cout << "d_x"<< d_x << std::endl;
-    // std::cout << "d_x/arc.radius"<< d_x/arc.radius << std::endl;
-    // std::cout << "Start,end POINT: ("<< s.x << "," << s.y << "), " << "("<< e.x << "," << e.y << ")" << std::endl;  
-
-    //Calculate beta = Angle btw positive x-axis and start    
-    beta = SafeAcos(d_x/arc.radius)*RAD2DEG; //angle wrt to x-axis
-    quadrant = compute_quadrant(s,arc.center);
-
-    // std::cout << "BETA_pre:"<< beta << std::endl;    
-    // std::cout << "Quadrant:"<< quadrant << std::endl;
-
-    switch (quadrant){
-    case 1:
-        beta = -beta;
-        break;
-    case 2:
-        beta = 180 + beta;
-        break;
-    case 3:
-        beta = 180 - beta;
-        break;
-    case 4:
-        // beta = beta;
-        break;
-
-    default:
-        printf("ERROR in calculate_arc");
-        break;
-    }
-    //std::cout << "BETA:"<< beta << std::endl;
-
-    //Check for sign of turn (Left or Right) with the original start and end point
-    if((arc.start_point.x > arc.end_point.x && arc.LSR == 2) || 
-            ((arc.start_point.x < arc.end_point.x && arc.LSR == 0))){
-        // Start point on the right wrt to end point and turn right OR
-        // Start point on the left wrt to end point and turn left
-        start_angle = beta;
-        end_angle = start_angle + alpha;
-    }
-    else if((arc.start_point.x > arc.end_point.x && arc.LSR == 0) || 
-            ((arc.start_point.x < arc.end_point.x && arc.LSR == 2))){
-        // Start point on the right wrt to end point and turn left OR
-        // Start point on the left wrt to end point and turn right
-        start_angle = 360 + beta;
-        end_angle = start_angle - alpha;
-    }
-
-    //std::cout << "START,END ANGLE:" << start_angle << "," << end_angle << std::endl;
-    
-    arc_param result = {start_angle, end_angle};
-
-    return result; 
-}    
-
-
 /* Draw an arc-------------------------------------------*/
 
 void draw_arc(arc_extract arc, img_map_def img_map_def, cv::Scalar colour = path_colour){   
@@ -209,7 +110,8 @@ void draw_arc(arc_extract arc, img_map_def img_map_def, cv::Scalar colour = path
         
         cv::ellipse(img_map_def.img_map, center_scaled, cv::Size(radius_scaled, radius_scaled), 
                 0, arc_angles.start_angle, arc_angles.end_angle, colour,1,15,0);
-      
+
+             
     }
 }
 
@@ -274,16 +176,7 @@ void draw_dubins_segment(arc_extract dubins_segment, img_map_def img_map_def,
 void draw_robot(float robot_x, float robot_y, float robot_theta, img_map_def img_map_def, 
                             cv::Scalar colour = robot_colour, bool show_direction=false){
     if(show_direction){
-        //TO_BE_IMPLEMENTED
-        // Arrow pointing to orientation of the robot
-        // cv::arrowedLine 	( 	InputOutputArray  	img,
-		// Point  	pt1,
-		// Point  	pt2,
-		// const Scalar &  	color,
-		// int  	thickness = 1,
-		// int  	line_type = 8,
-		// int  	shift = 0,
-		// double  	tipLength = 0.1 )	
+        //TBD        
     }
     else{
         Point robot_pose = Point(robot_x,robot_y);
@@ -298,31 +191,18 @@ void draw_victim(std::pair<int,Polygon> victim, img_map_def img_map_def,
                         bool show_contour = false){
     
     //char victim_number = victim.first;
-    std::string victim_number = std::to_string(victim.first + 1); //start at 0
+    std::string victim_number = std::to_string(victim.first); //start at 0
     Point rel_number_label = Point(0.01,0); //Relative label w.r.t victim centroid
     cv::Point abs_number_label_scaled;  //absolute position of label scaled.
-    Point centroid;
-    float centroid_x, centroid_y;
-    centroid_x = 0;
-    centroid_y = 0;    
+    Point centroid;        
     Polygon victim_poly = victim.second;
-
-    //std::cout << "victim number: " << victim.first << std::endl;
-
-    //Calculate centroid  
-    float n_points = victim_poly.size();
-    for (int i=0;i<n_points;i++){
-      //std::cout << "Centroid value: " << centroid_x << ", " << centroid_y << std::endl;
-      centroid_x += victim_poly[i].x;
-      centroid_y += victim_poly[i].y;
-      //std::cout << "Centroid sum: " << centroid_x << ", " << centroid_y << std::endl;   
-    }
-    centroid = Point(centroid_x/n_points, centroid_y/n_points);
-    //std::cout << "Centroid: " << centroid_x/n_points << ", " << centroid_y/n_points << std::endl;
+   
+    //Calculate centroid 
+    centroid = get_polygon_centroid(victim_poly);
 
     if(show_contour){
-        draw_polygon(victim_poly, img_map_def, victim_colour);
-        draw_point(centroid, img_map_def, cv::Scalar(0,0,0));
+        draw_polygon(victim_poly, img_map_def, path_colour);
+        draw_point(centroid, img_map_def, victim_colour);
     }
     else{        
         draw_point(centroid, img_map_def, victim_colour);
@@ -351,10 +231,7 @@ void draw_test(std::vector<Polygon> poly_list, float x,
 
     /* Drawing polygons-------------------------------------------*/
 
-    Polygon poly;              
-    // //Code for drawing a single polygon
-    // poly = poly_list[0];
-    // draw_polygon(poly, map_param);
+    Polygon poly;    
 
     //Code for printing all polygons   
     for (size_t i = 0; i<poly_list.size(); i++){
@@ -370,19 +247,7 @@ void draw_test(std::vector<Polygon> poly_list, float x,
     eg_point.x = 0.75;
     eg_point.y = 0.5;
     draw_point(eg_point, map_param);
-
-    // //Generate random pointst
-    // std::vector<Point> eg_points;    
-    // for(int i=0;i<1000;i++){
-    //   int x_rand = rand() % 150 + 1; //Generate random sample
-    //   int y_rand = rand() % 100 + 1; 
-    //   //std::cout << x_rand << "," << y_rand << std::endl;
-    //   eg_points.emplace_back(x_rand,y_rand);
-    // }    
-    // //Add points to map image    
-    // for (int i=0;i<1000;i++){
-    //   draw_point(eg_points[i], map_param);      
-    // }
+ 
 
 
     /* Drawing semicircle-------------------------------------------*/
@@ -556,4 +421,186 @@ void draw_motion_planning(const std::vector<Polygon>& obstacle_list,img_map_def 
            
     }
 
+}
+
+/*------------- missions drawing ----------------------------*/
+void drawing_mission_0(double start_pose[3], double gate_pose[3], Polygon gate, 
+    mission_output_0 miss_output_0, img_map_def map_param){
+    //variables
+    struct arc_extract three_seg[3];
+
+    //draw gate
+    draw_polygon(gate, map_param, cv::Scalar(255,0,0));
+    //Draw path
+    create_three_seg(three_seg, start_pose[0], start_pose[1], miss_output_0.dubins_path);
+    for(int i=0; i< 3; i++){      
+        draw_dubins_segment(three_seg[i], map_param, cv::Scalar(0,0,255));
+    } 
+    //draw start and end point
+    draw_point(Point(start_pose[0], start_pose[1]), map_param, cv::Scalar(0,255,0));
+    draw_point(Point(gate_pose[0], gate_pose[1]), map_param, cv::Scalar(0,255,0));
+}
+
+
+void drawing_mission_1(std::vector<Polygon> inflated_obstacle_list, Polygon gate,
+    mission_output_1 miss_output_1, img_map_def map_param){
+
+    //Drawing variables
+    std::pair<Point, std::vector<Point>> graph_node;  
+    Point V;
+    std::vector<Point> E; 
+    arc_extract edge_line;
+    Point E_point;
+    arc_extract dubins_path_seg;  
+
+
+    //draw polygons
+    for (size_t i = 0; i<inflated_obstacle_list.size(); i++){
+        draw_polygon(inflated_obstacle_list[i], map_param);
+    }
+
+    //draw gate
+    draw_polygon(gate, map_param, cv::Scalar(255,20,147));
+
+    // //Draw prm_graph
+    // for(int i=0; i<miss_output_1.prm_graph.size(); i++){
+    //      //std::cout << "prm raph size: " << prm_graph.size() << std::endl;
+    //      graph_node = miss_output_1.prm_graph[i];
+    //      V = graph_node.first; //Vertex
+    //      //std::cout << "prm V: " << V.x << ", " << V.y << std::endl;
+    //      E = graph_node.second; //Edges
+    //      //Draw edges    
+    //      for(int j=0;j<E.size();j++){ 
+    //         //std::cout << "Edge: " << E[j].x << ", " << E[j].y << std::endl;
+    //         edge_line = to_arc_extract_type(V,E[j],true);
+    //         draw_line(edge_line, map_param);
+    //      }
+    //      //Draw vertex
+    //      draw_point(V, map_param, cv::Scalar(255,0,0));
+    // }  
+
+     //Draw sample points  
+    for (int z=0;z<miss_output_1.free_space_points.size();z++){
+        draw_point(miss_output_1.free_space_points[z], map_param, cv::Scalar(255,255,255));           
+    }
+
+     //Draw global_planner path
+    for(int i=0;i<miss_output_1.global_planner_path.size();i++){   
+         //Draw path
+         if(i<miss_output_1.global_planner_path.size()-1){         
+            edge_line = to_arc_extract_type(miss_output_1.global_planner_path[i],miss_output_1.global_planner_path[i+1],true);
+            draw_line(edge_line, map_param, cv::Scalar(0,255,0));    
+         }
+         //std::cout << "gpp "<< i << ": " << global_planner_path[i].x << ", " << global_planner_path[i].y << std::endl;
+    }
+
+    //Draw failed dubins curve   
+    for(int i=0; i<miss_output_1.failed_paths_draw.size(); i++){
+        dubins_path_seg = miss_output_1.failed_paths_draw[i]; //retrieve three_segments
+        //std::cout << "Dubins_path_" << i << std::endl;
+
+        //Draw
+        draw_dubins_segment(dubins_path_seg, map_param, cv::Scalar(255,0,0));
+    } 
+
+    //Draw sucessful dubins curve   
+    for(int i=0; i<miss_output_1.path_final_draw.size(); i++){
+        dubins_path_seg = miss_output_1.path_final_draw[i]; //retrieve three_segments
+        //std::cout << "Dubins_path_" << i << std::endl;
+
+        //Draw
+        draw_dubins_segment(dubins_path_seg, map_param, cv::Scalar(0,255,0));
+    } 
+
+    //Draw collision points      
+    for(int i=0;i<miss_output_1.collision_points.size();i++){      
+      draw_point(miss_output_1.collision_points[i], map_param);
+    }      
+
+}
+
+void drawing_mission_2(std::vector<Polygon> inflated_obstacle_list, 
+    std::vector<std::pair<int,Polygon>> victim_list, mission_output_2 miss_output_2, img_map_def map_param){
+
+    //Drawing variables
+    std::pair<Point, std::vector<Point>> graph_node;  
+    Point V, victim_centroid;
+    std::vector<Point> E; 
+    arc_extract edge_line;
+    Point E_point;
+    arc_extract dubins_path_seg;  
+    std::vector<arc_extract> all_paths, opt_path;
+    std::vector<arc_extract> path_draw;    
+
+    //draw polygons
+    for (size_t i = 0; i<inflated_obstacle_list.size(); i++){
+        draw_polygon(inflated_obstacle_list[i], map_param);
+    }
+
+    
+    // //Draw prm_graph
+    // for(int i=0; i<miss_output_2.prm_graph.size(); i++){
+    //      //std::cout << "prm raph size: " << prm_graph.size() << std::endl;
+    //      graph_node = miss_output_2.prm_graph[i];
+    //      V = graph_node.first; //Vertex
+    //      //std::cout << "prm V: " << V.x << ", " << V.y << std::endl;
+    //      E = graph_node.second; //Edges
+    //      //Draw edges    
+    //      for(int j=0;j<E.size();j++){ 
+    //      //std::cout << "Edge: " << E[j].x << ", " << E[j].y << std::endl;
+    //      edge_line = to_arc_extract_type(V,E[j],true);
+    //      draw_line(edge_line, map_param);
+    //      }
+    //      //Draw vertex
+    //      draw_point(V, map_param, cv::Scalar(255,0,0));
+    // }  
+
+    //Draw sample points  
+    for (int z=0;z<miss_output_2.free_space_points.size();z++){
+       draw_point(miss_output_2.free_space_points[z], map_param, cv::Scalar(255,0,0));           
+    }
+
+
+    //Draw global_planner path
+    for(int i=0;i<miss_output_2.global_planner_path.size();i++){   
+        //Draw path
+        if(i<miss_output_2.global_planner_path.size()-1){         
+            edge_line = to_arc_extract_type(miss_output_2.global_planner_path[i],miss_output_2.global_planner_path[i+1],true);
+            draw_line(edge_line, map_param, cv::Scalar(0,255,0));    
+        }
+        //std::cout << "gpp "<< i << ": " << global_planner_path[i].x << ", " << global_planner_path[i].y << std::endl;
+    }
+    
+ 
+    //Draw victims 
+    for(std::pair<int,Polygon> victim : victim_list){
+      victim_centroid = get_polygon_centroid(victim.second);      
+      //std::cout << "victim: " << victim.first << ": " << victim_centroid.x << "," << victim_centroid.y << std::endl;
+      //draw
+      draw_victim(victim, map_param);
+    }
+
+    // //Draw all paths
+    // //Retrieve each path
+    // for(int i=0;i<miss_output_2.all_cost_pathdraw.size();i++){
+    //     path_draw = miss_output_2.all_cost_pathdraw[i].second; 
+    //     //cost TBD   
+    //     //Draw dubins
+    //     for(int j=0; j<path_draw.size(); j++){
+    //         dubins_path_seg = path_draw[j]; //retrieve three_segments  
+    //         //Draw
+    //         draw_dubins_segment(dubins_path_seg, map_param, cv::Scalar(255,0,0));
+    //     } 
+    // }
+
+    //Draw optimal one
+    path_draw = miss_output_2.opt_cost_pathdraw.second;
+    //cost TBD
+    //Draw dubins
+    for(int j=0; j<path_draw.size(); j++){
+        dubins_path_seg = path_draw[j]; //retrieve three_segments  
+        //Draw
+        draw_dubins_segment(dubins_path_seg, map_param, cv::Scalar(0,255,0));
+    } 
+   
 }

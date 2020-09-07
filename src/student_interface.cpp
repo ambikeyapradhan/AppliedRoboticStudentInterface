@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <sstream>
+#include <iostream>
 
 #include <vector>
 #include <atomic>
@@ -15,8 +16,6 @@
 
 #include "findRobot.cpp"
 
-#include "dubins_curve.hpp"
-
 #include "image_undistort.hpp"
 
 #include "clipper.hpp"
@@ -25,18 +24,29 @@
 
 #include "draw_functions.cpp"
 
-#include "PRM.h"
+//#include "PRM.h"
 
 #include <collision_detection.hpp>
 
-#include "unit-testing.cpp"
-
 #include "process_map.cpp"
 
+#include "unit-testing.cpp"
+
+#include "mission_apis.hpp"
+
+
+//#include "DubinsCurvesHandler.hpp"
+
 //Unit test and printouts variables
-#define VISUALIZE_MAP 1   //(0)Deactivated - (1)Visualize elements in map
-#define DUBINS_CURVE 1
+#define DUBINS_CURVE 0
 #define DUBINS_TEST 0
+#define PRM_PLANNER_TEST 0
+#define DRAW_GATE_TEST 0
+#define UNIT_TEST 0
+
+#define LAB_DIR 0
+int dir = 0; 
+
 
 namespace student {
 
@@ -50,7 +60,7 @@ namespace student {
 
     static size_t id = 0;
 
-    const char *folder_path="/home/gkiri/Desktop/Computer_Vision/";
+    const char *folder_path="/home/ambikeya/workspace/project_1/AppliedRoboticsStudentInterface/Computer_Vision/";
 
     imshow(topic,img_in);
 
@@ -218,8 +228,6 @@ namespace student {
   }
 
 
-
-
  //-------------------------------------------------------------------------
   //          UNWARP TRANSFORM
   //-------------------------------------------------------------------------
@@ -228,35 +236,66 @@ namespace student {
     cv::warpPerspective(img_in, img_out, transf, img_in.size());
   }
 
+    bool processMap(const cv::Mat& img_in, const double scale, std::vector<Polygon>& obstacle_list, std::vector<std::pair<int,Polygon>>& victim_list, Polygon& gate, const std::string& config_folder){
 
-  bool processMap(const cv::Mat& img_in, const double scale, std::vector<Polygon>& obstacle_list, std::vector<std::pair<int,Polygon>>& victim_list, Polygon& gate, const std::string& config_folder){
+    std::cout << "Ambikeya::$$$$$$$$$$$$$$$ processMap-------------- "  << std::endl;
+    bool arena=true;
+    std::string folder_name;
+    
+    #if LAB_DIR
+    folder_name = "/home/ambikeya/workspace/project_1/AppliedRoboticsStudentsInterface/imgs/template/";
+    #else
+    if(dir){      
+      folder_name = "/home/ambikeya/workspace/project_1/AppliedRoboticsStudentsInterface/imgs/template/";
+    }
+    else{
+      folder_name = "/home/ambikeya/workspace/project_1/AppliedRoboticsStudentsInterface/imgs/template/";
+    }
+    #endif
 
-    std::cout << "Gkiri::$$$$$$$$$$$$$$$ processMap-------------- "  << std::endl;
+    std::string& template_folder = folder_name;   
+
+    //const std::string& 
+
+    //const std::string& template_folder="../imgs/template/";
     // Convert color space from BGR to HSV
-    cv::Mat hsv_img;
+    cv::Mat hsv_img,temp_img;
     cv::cvtColor(img_in, hsv_img, cv::COLOR_BGR2HSV);
 
     const bool res1 = processObstacles(hsv_img, scale, obstacle_list);
     if(!res1) std::cout << "processObstacles return false" << std::endl;
+
+    #if LAB_DIR
+    const bool res2 = Gate_Process_second(hsv_img, temp_img, scale,gate,arena);    
+    #else
     const bool res2 = processGate(hsv_img, scale, gate);
+    #endif
     if(!res2) std::cout << "processGate return false" << std::endl;
+
     //const bool res3 = processVictims(hsv_img, scale, victim_list);
-    const bool res3 = processVictims_student(img_in,hsv_img, scale, victim_list,config_folder);
+    const bool res3 = processVictims_student(img_in,hsv_img, scale, victim_list,template_folder);
     if(!res3) std::cout << "processVictims return false" << std::endl;
 
+
+    //std::cout << "processMap ENd = " << (res1 && res2 && res3 )<< std::endl;
     return res1 && res2 && res3;
 
   }
 
+
   bool findRobot(const cv::Mat& img_in, const double scale, Polygon& triangle, double& x, double& y, double& theta, const std::string& config_folder){
     //throw std::logic_error( "STUDENT FUNCTION NOT IMPLEMENTED" );
-
-    //std::cout << "Gkiri:: findRobot:: Started" << std::endl;
-    findRobot_api(img_in, scale, triangle, x, y, theta, config_folder);
-    // Save robot parameters
-    x = x;
-    y = y;
-    theta = theta;
+    bool robot_found;
+    
+    //std::cout << "findRobot:: Started" << std::endl;
+    //robot_found=findRobot_api(img_in, scale, triangle, x, y, theta, config_folder);
+    robot_found=process_robot(img_in, scale, triangle, x, y, theta, config_folder);
+    if(!robot_found) 
+      std::cout << "findRobot:: return false " << std::endl;
+      // Save robot parameters
+      x = x;
+      y = y;
+      theta = theta;
   }
 
 
@@ -266,134 +305,471 @@ namespace student {
                 Path& path,
                 const std::string& config_folder)
 
-  { 
-    //Robot parameters (move to another file?)
-    const double robot_length = 0.2; //(m)
-    const double robot_width = 0.14; //(m)
-    struct arc_extract three_seg[3];//segment extract
+  {   
+    /*************CONFIG VARIABLES*********************/
+    //Load config file     
+    std::string config_dir;
+    #if LAB_DIR
+  	config_dir = "/home/ambikeya/workspace/project_1/AppliedRoboticsStudentInterface/src/config_parameters.txt";
+    #else    
+    if(dir){
+      config_dir = "/home/ambikeya/workspace/project_1/AppliedRoboticsStudentInterface/src/config_parameters.txt";
+    }
+    else{
+      config_dir = "/home/ambikeya/workspace/project_1/AppliedRoboticsStudentInterface/src/config_parameters.txt";
+    }    
+    #endif
 
-    //Visualising the map parameters
-    double map_w = 1.5; //real map width in m
-    double map_h = 1; //real map height in m  
-    double img_map_w = 720; //image map width in pixels
-    //image map height is calculated through the other three parameters
-    /* Initialize map image -------------------------------------------*/
+    //Robot parameters
+    double robot_length = load_config_param(config_dir, "robot_length"); //(m)    
+    double robot_width = load_config_param(config_dir, "robot_width"); //(m)
+    double robot_speed = load_config_param(config_dir, "robot_speed"); //(m/s)   
+
+    //Visualising the map parameters        
+    double img_map_w = load_config_param(config_dir, "img_map_w"); //image map width in pixels
+    //image map height is calculated through the other three parameters 
+    
+    //Sampling
+    int rand_samples = load_config_param(config_dir, "rand_samples");
+    int gauss_samples = load_config_param(config_dir, "gauss_samples");
+    
+    //Local planner
+    double min_dist = load_config_param(config_dir, "min_dist");     
+    double max_dist = load_config_param(config_dir, "max_dist");
+    
+    //Dubins parameters
+    double k_max = load_config_param(config_dir, "k_max");    
+    double discretizer_size = load_config_param(config_dir, "discretizer_size");    
+
+    //Dubins planner
+    double delta = load_config_param(config_dir, "delta"); //tune angle in degrees    
+
+    //mission parameters
+    int mission_id = load_config_param(config_dir, "mission_id");
+    double victim_reward = load_config_param(config_dir, "victim_reward"); //s
+    double goal_delta = load_config_param(config_dir, "goal_delta"); //m
+   
+    //Drawing flag
+    int drawing = load_config_param(config_dir, "drawing");
+    int unit_test = load_config_param(config_dir, "unit_test");
+    /*****************************************************/
+
+    /***********VARIABLES*********************************/
+    //variables
+    double start_pose[3], gate_pose[3];
+    struct dubins_param dubins_param; 
+    std::vector<Point> bias_points;    
+
+    //output for missions
+    struct mission_output_0 miss_output_0;
+    struct mission_output_1 miss_output_1; 
+    struct mission_output_2 miss_output_2; 
+    /******************************************************/
+
+    /********* MAP ****************************************/
+    //Retrieve map dimensions   
+    //Points of borders in the same order as selection after pipeline (lb,rb,rt,lt)
+    // i.e, map width = right bottom, map height = left top
+    double map_w = borders[1].x; //m
+    double map_h = borders[3].y; //m
+    //std::cout << map_w << "," << map_h << std::endl;
 
     //Initialize map matrix and scale
-    img_map_def map_param = initialize_img_map(map_w, map_h, img_map_w);
-    //std::cout << "Scale: " << map_param.scale << std::endl; 
+    img_map_def map_param = initialize_img_map(map_w, map_h, img_map_w);    
 
-    /* Inflate polygons -------------------------------------------*/
-    //Radius of circle approximating robot shape (m) 
-    //double OFFSET = sqrt(pow(robot_length/2,2) + pow(robot_width/2,2)); //more restrictive case, diagonal of robot
-    double OFFSET = 0.2/2; // less restrictive case --> length of robot                           
-    std::vector<Polygon> inflated_obstacle_list;
-    //Inflate polygon function --> Return std::vector<Polygon>
-    inflated_obstacle_list = inflate_polygons(obstacle_list, OFFSET);
+    std::vector<Polygon> clean_obstacle_list, inflated_obstacle_list, inflated_walls;
+    //sanity check: Eliminate polygons with 2 or less edges
+    for(Polygon poly:obstacle_list){   
+      if(poly.size() > 2){
+        clean_obstacle_list.push_back(poly);
+      }
+    }   
 
-    //Print polygons    
-    //print_polygons_out(obstacle_list, inflated_obstacle_list);
+    //Retrieve end point and gate
+    //end point = gate_pose    
+    Polygon square_gate = get_gate_pose(gate, map_h, map_w, robot_length, gate_pose, goal_delta); 
+    
+    //Inflate polygons and walls   
+    double OFFSET = sqrt(pow(robot_length,2) + pow(robot_width,2))/2; //Robot radius
+   
+    //Inflate polygons    
+    inflated_obstacle_list = inflate_polygons(clean_obstacle_list, OFFSET);
 
-    /* **********************Gkiri PRM space Unit Testing*************************/
-    //UT_sample_generation(inflated_obstacle_list ,&map_param);
+    //Inflate walls    
+    inflated_walls = inflate_walls(map_w, map_h, OFFSET, gate, square_gate); //substract gate shape
+
+    //Add inflated walls to inflated_obstacle_list
+    inflated_obstacle_list.insert(inflated_obstacle_list.end(),inflated_walls.begin(),
+            inflated_walls.end());
+    /************************************************************************/
+
+   
+    /****************** MISSIONS **********************************************/ 
+    
+    //set dubins param
+    dubins_param.k_max = k_max;
+    dubins_param.discretizer_size = discretizer_size;
+
+    //set PRM params
+    struct PRM_param PRM_param;
+    PRM_param.map_h = map_h;
+    PRM_param.map_w = map_w;
+    PRM_param.obstacle_list = inflated_obstacle_list;
+    PRM_param.rand_samples = rand_samples;
+    PRM_param.gauss_samples = gauss_samples;
+    PRM_param.max_dist = max_dist;
+    PRM_param.min_dist = min_dist;
+    PRM_param.scale = map_param.scale;
+    
+    //start point    
+    start_pose[0] = x;
+    start_pose[1] = y;
+    start_pose[2] = theta;    
+
+    
+
+    /*--------mission selection ------------*/
+    switch (mission_id){
+
+    case 0:      
+      miss_output_0 = mission_0(dubins_param, start_pose, gate_pose);     
+      if(miss_output_0.path.empty()){
+        printf("Empty path\n");   
+        break;
+      }
+      else{
+        //set path
+        path = miss_output_0.path;
+        if(drawing){       
+          drawing_mission_0(start_pose,gate_pose,gate,miss_output_0,map_param);
+        }
+      }
+      break;       
+    
+    case 1:
+      
+      miss_output_1 = mission_1(PRM_param, dubins_param, start_pose, gate_pose, 
+                                  victim_list, delta);      
+      if(miss_output_1.path.empty()){
+        drawing_mission_1(inflated_obstacle_list, gate, miss_output_1, map_param);           
+        printf("Empty path\n");        
+        break;
+      }
+      else{
+        //Set path
+        path = miss_output_1.path;
+        if(drawing){
+          drawing_mission_1(inflated_obstacle_list, gate, miss_output_1, map_param);
+        }
+      }      
+      break;
+
+    case 2:
+      
+      miss_output_2 = mission_2(PRM_param, dubins_param, start_pose, gate_pose, 
+                          victim_list, delta, victim_reward, robot_speed);
+      if(miss_output_2.path.empty()){   
+        printf("Empty path\n");
+        break;
+      }
+      else{
+        //Print cost
+        std::cout << "Total path cost: " << miss_output_2.opt_cost_pathdraw.first << std::endl;
+        //Set path
+        path = miss_output_2.path;
+        if(drawing){
+          drawing_mission_2(inflated_obstacle_list, victim_list, miss_output_2, map_param);
+        }
+      }      
+      break;
+    
+    
+    default:
+      printf("Student interface: No mission selected\n");
+      break;
+    }   
+    
+
+
+
+
+
+    /*********************UNIT TEST SECTION*******************************************************/
+    #if UNIT_TEST
+    #if DRAW_GATE_TEST
+    //Drawing
+    //polygons
+    for (size_t i = 0; i<obstacle_list.size(); i++){
+      draw_polygon(obstacle_list[i], map_param, cv::Scalar(255,0,0));
+    }
+    //gate
+    draw_polygon(gate, map_param, cv::Scalar(255,0,0));
+    //center point
+    Point rect_center = Point(gate_pose[0], gate_pose[1]);
+    std::cout << "Gate robot pose: " << gate_pose[0] << "," << gate_pose[1] << std::endl;
+    draw_point(rect_center, map_param);    
+    #endif
+    /****************************************************************************/
+
+    
+
+    /*****************overall and prm planner Unit testing ********************/
+    if (unit_test){
+      //double start_pose[3], goal_pose[3];
+      //struct dubins_param dubins_param;
+      //double RAD2DEG = 180.0/M_PI;
+      //dubins_param.k_max = k_max;
+      //dubins_param.discretizer_size = discretizer_size;
+
+
+
+      //start point    
+      start_pose[0] = x;
+      start_pose[1] = y;
+      start_pose[2] = theta;
+      
+      //end point
+      gate_pose[0] = 1.34648;
+      gate_pose[1] = 0.747094;
+      gate_pose[2] = M_PI/2;    
+      //bias points
+      //std::vector<Point> bias_points;
+      //Call planner
+
+      //UT_overall_planner(start_pose, gate_pose, inflated_obstacle_list,map_w,map_h,rand_samples, &map_param); 
+      //UT_prm_planner(qs, qe, bias_points, inflated_obstacle_list, map_w,map_h,N, &map_param); 
+      //Create instance
+      /*
+      PRM obj(inflated_obstacle_list, map_w, map_h, N);
+      //call prm_planner   
+      path = obj.prm_planner(start_pose, goal_pose, bias_points, dubins_param); 
+      if(path.empty()){printf("Empty path\n");}
+      else{
+        for(int i=0;i<path.points.size();i++){
+        std::cout << "point " << i << ": " << path.points[i].s <<","<< path.points[i].x <<","
+        << path.points[i].y <<"," << path.points[i].theta <<","<< path.points[i].kappa << std::endl;
+        }
+      }
+      
+      //Retrieving outputs
+      std::vector<Point> free_space_points = obj.get_free_space_points();
+      std::vector<std::pair<Point, std::vector<Point> >> prm_graph = obj.get_prm_graph();
+      std::vector<Point> global_planner_path = obj.get_global_planner_path(); 
+      //Drawing
+      //Drawing variables
+      std::pair<Point, std::vector<Point>> graph_node;  
+      Point V;
+      std::vector<Point> E; 
+      arc_extract edge_line;
+      Point E_point;
+      arc_extract dubins_path_seg;  
+      
+      //draw polygons
+      for (size_t i = 0; i<inflated_obstacle_list.size(); i++){
+        draw_polygon(inflated_obstacle_list[i], map_param);
+      }
+      
+      //Draw prm_graph
+      for(int i=0; i<prm_graph.size(); i++){
+        //std::cout << "prm raph size: " << prm_graph.size() << std::endl;
+        graph_node = prm_graph[i];
+        V = graph_node.first; //Vertex
+        //std::cout << "prm V: " << V.x << ", " << V.y << std::endl;
+        E = graph_node.second; //Edges
+        //Draw edges    
+        for(int j=0;j<E.size();j++){ 
+          //std::cout << "Edge: " << E[j].x << ", " << E[j].y << std::endl;
+          edge_line = to_arc_extract_type(V,E[j],true);
+          draw_line(edge_line, map_param);
+        }
+        //Draw vertex
+        draw_point(V, map_param, cv::Scalar(255,0,0));
+      }  
+      //Draw sample points  
+      for (int z=0;z<free_space_points.size();z++){
+          draw_point(free_space_points[z], map_param, cv::Scalar(255,0,0));           
+      }
+      //Draw global_planner path
+      for(int i=0;i<global_planner_path.size();i++){   
+        //Draw path
+        if(i<global_planner_path.size()-1){         
+          edge_line = to_arc_extract_type(global_planner_path[i],global_planner_path[i+1],true);
+          draw_line(edge_line, map_param, cv::Scalar(0,255,0));    
+        }
+        //std::cout << "gpp "<< i << ": " << global_planner_path[i].x << ", " << global_planner_path[i].y << std::endl;
+      }
+      //Draw dubins curve   
+      for(int i=0; i<obj.path_final_draw.size(); i++){
+        dubins_path_seg = obj.path_final_draw[i]; //retrieve three_segments
+        //std::cout << "Dubins_path_" << i << std::endl;
+      
+        //Draw
+        draw_dubins_segment(dubins_path_seg, map_param, cv::Scalar(0,0,255));
+      } 
+      */
+    } 
+    
+    
+    /*****************************************************************************/  
+     
+    
+    /* Dubins Section-------------------------------------------*/
+    #if DUBINS_TEST
+    /* Dubins Section-------------------------------------------*/
+    struct arc_extract three_seg[3];//segment extract
+    //double start_pose[3], goal_pose[3];   
+
+    //start point
+    start_pose[0] = x;
+    start_pose[1] = y;
+    start_pose[2] = theta;
+
+    // //start point
+    // start_pose[0] = 1.4;
+    // start_pose[1] = 0.4;
+    // start_pose[2] = 0;
+    
+    //end point
+    // goal_pose[0] = gate_pose[0];
+    // goal_pose[1] = gate_pose[1];
+    // goal_pose[2] = gate_pose[2];
+
+    //down wall
+    gate_pose[0] = x - 0.05;
+    gate_pose[1] = y;
+    gate_pose[2] = M_PI/4;
+
+    //establish Dubins curve generator
+
+    //DubinsCurvesHandler dubins_handler{};
+    DubinsCurvesHandler dubins_handler(k_max, discretizer_size);
+    Path path_container;
+
+    DubinsCurve dubins_path = dubins_handler.findShortestPath(start_pose[0],start_pose[1],start_pose[2],
+                                                gate_pose[0], gate_pose[1], gate_pose[2]);
+
+    for(int j = 0; j < dubins_path.discretized_curve.size(); j++)
+    {
+        path.points.emplace_back(dubins_path.discretized_curve[j].s, 
+              dubins_path.discretized_curve[j].xf, dubins_path.discretized_curve[j].yf, 
+              dubins_path.discretized_curve[j].thf, dubins_path.discretized_curve[j].k);
+    }
+
+    //test for create_three_seg
+    create_three_seg(three_seg, start_pose[0], start_pose[1], dubins_path);
+
+    //test for dubins collision detection
+    UT_dubins_collision_test(three_seg, inflated_obstacle_list, &map_param);
+
+    // concatenate_dubins_path(path_container, dubins_path, discretizer_size);
+    // path = path_container;
+    // if(path.empty()){printf("Empty path\n");}
+    // else{
+    //   for(int i=0;i<path.points.size();i++){
+    //   std::cout << "point " << i << ": " << path.points[i].s <<","<< path.points[i].x <<","
+    //   << path.points[i].y <<"," << path.points[i].theta <<","<< path.points[i].kappa << std::endl;
+    //   }
+    // }
+
+    #endif
+
+    
+    /*********************UNIT TEST SECTION*******************************************************/    
+    //permute
+    //UT_permute();
+    //UT_print_all_comb(victim_list);
+
+    /************************Draw test******************************************/
+    //Print an example of th drawing functions in a single image
+    //draw_test(obstacle_list,x,y,theta,victim_list,map_param);
+    
+    //UT_draw_victims(victim_list,&map_param);
+
+    /*****************************************************************************/ 
+
+    /*****************PRM ellipse and draw Unit testing ******************/
+    //UT_cv_elipse_test(&map_param);
+    //UT_draw_arc_test(&map_param);
+     /***************************************************************************/
+
+    /***********************arc_draw_test Unit Testing**********************/
+    //UT_arc_draw_test(&map_param);
+    /*****************************************************************************/
+
+    /******************UT_dubins_curve_test space Unit Testing*************/
+    //UT_dubins_curve_test(three_seg,&map_param);
+    //UT_Bounding_Box_dubins_check(obstacle_list,three_seg,&map_param);
     /*****************************************************************************/
     
+    /* **********************PRM space Unit Testing*************************/
+    //UT_sample_generation(inflated_obstacle_list,map_w,map_h,rand_samples,&map_param);
+    //inflated_obstacle_list = UT_substract_gate(map_w,map_h, OFFSET, gate, square_gate);
+    UT_guass_generation_test(inflated_obstacle_list,map_w,map_h,gauss_samples,&map_param);
+    std::cout << "number of samples passed:" << gauss_samples << std::endl;
+    
+    /*****************************************************************************/
+    
+    /************************Process map unit testing******************************/
     // //Draw original polygons on top of inflated ones
     // for (size_t i = 0; i<obstacle_list.size(); i++){
     //   draw_polygon(obstacle_list[i], map_param, cv::Scalar(255,0,0));
     // }
 
-    for (size_t i = 0; i<victim_list.size(); i++){
-      draw_polygon(victim_list[i].second, map_param, cv::Scalar(255,0,0));
-    }
+    // for (size_t i = 0; i<victim_list.size(); i++){
+    //   draw_polygon(victim_list[i].second, map_param, cv::Scalar(255,0,0));
+    // }  
+    /*****************************************************************************/ 
 
-  /*****************Alvaro PRM global planner Unit testing *************************/
-    //UT_global_planner(inflated_obstacle_list, &map_param);    
-  /*****************************************************************************/
-
-  /*****************Ambike PRM local planner Unit testing **********************/
-    //UT_local_planner(inflated_obstacle_list, &map_param);
-  /* **********************Ambikeya Line-Line Collision Unit Testing*************************/
+    //* **********************Line-Line Collision Unit Testing********************/
     //UT_line_line_collision(&map_param);
     //UT_line_circle_collision(&map_param);
+    /*****************************************************************************/ 
 
-  /*****************GkiriCollision Unit testing **********************/
-    //UT_line_arc_collision(&map_param);
+
+    /*****************Collision Unit testing ********************************/
+    //UT_line_arc_collision_prof(&map_param);
     //UT_Bounding_Box(obstacle_list,&map_param);
     //UT_Bounding_Box_line_check(obstacle_list,&map_param);//boundingbox vs line
+    //UT_Bounding_Box_line_check_obstacles(obstacle_list,&map_param);//boundingbox vs line
     //UT_Bounding_Box_arc_check(obstacle_list,&map_param);
-  /*****************************************************************************/ 
+    //UT_Polygons_arc_check(obstacle_list,&map_param);
+    //UT_Polygons_line_check(obstacle_list,&map_param);
 
-  /*****************Alvaro dubins path Unit testing *************************/
+    //UT_Global_line_collision_check(obstacle_list,&map_param);
+    //UT_Global_arc_collision_check(obstacle_list,&map_param);
+    /*****************************************************************************/ 
+
+    /*****************dubins path Unit testing *************************/
     //UT_dubins_path(inflated_obstacle_list, &map_param);    
 
-  /*****************Alvaro PRM local planner Unit testing **********************/
+    /*****************PRM local planner Unit testing **********************/
     //UT_local_planner(inflated_obstacle_list, &map_param);
     //UT_KDTree(&map_param);
-  /*****************************************************************************/
+    /*****************************************************************************/
 
-  /*****************Alvaro PRM global planner Unit testing *************************/
+    /*****************PRM global planner Unit testing *************************/
     //UT_global_planner(inflated_obstacle_list, &map_param);    
-  /*****************************************************************************/
- 
+    /*****************************************************************************/
 
-  /*****************Alvaro dubins path Unit testing *************************/
+    /*****************dubins path Unit testing *****************************/
     //UT_dubins_path(inflated_obstacle_list, &map_param);  
     //UT_compute_triangle_angles(&map_param);
-  /*****************************************************************************/
-
-    
-
-    
-    
-    /* Draw test-------------------------------------------*/
-    //Print an example of th drawing functions in a single image
-    //draw_test(obstacle_list,x,y,theta,victim_list,map_param);
-
-    /*****************Alvaro PRM ellipse and draw Unit testing *************************/
-    //UT_cv_elipse_test(&map_param);
-    //UT_draw_arc_test(&map_param);
-     /*****************************************************************************/
-
-    /***********************Gkiri arc_draw_test Unit Testing*************************/
-    //UT_arc_draw_test(&map_param);
     /*****************************************************************************/
-    
-    /* Dubins Section-------------------------------------------*/
-    //std::cout << "Before path: " << path.size() << std::endl;
-    double q0[3];//start point
-    double q1[3];//end point
-    double rho=0.1; //turning radius
 
-    //Robot position
-    //std::cout << "Robot position: " << x << ", "<< y << ", " << theta << std::endl;
-    //Dubins test
-    #if DUBINS_TEST
-
-    q0[0]=0;//start of dubins
-    q0[1]=0;
-    q0[2]=0;
-    q1[0]=0.8;//end of dubins
-    q1[1]=0.3;
-    q1[2]=0;
-    dubins_wrapper_api(path,three_seg,q0,q1,rho);
-    /* **********************Gkiri UT_dubins_curve_test space Unit Testing*************************/
-    //UT_dubins_curve_test(three_seg,&map_param);
-    //UT_Bounding_Box_dubins_check(obstacle_list,three_seg,&map_param);
-    /*********************************************************************************************/
     #endif
 
-    /* Map visualization -------------------------------------------*/
-    #if VISUALIZE_MAP
-    //Show map image
-    cv::imshow("Image",map_param.img_map);
-    cv::waitKey( 0.01 );
-    #endif
+
+    /* Map visualization -------------------------------------------*/    
+    if(drawing){      
+      //Show map image
+      cv::imshow("Image",map_param.img_map);
+      cv::waitKey( 0.01 );
+    }
+      
     
-    //std::cout << "After path: " << path.size() << std::endl;
+
     return true;
 
   }
 
 }
-
