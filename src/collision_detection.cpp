@@ -148,7 +148,7 @@ int get_line_circle_intersection(Point linestart, Point lineend,Point center, do
     float ex = t*dxl + linestart.x, ey = t*dyl + linestart.y; // Coordinates of e on line and closest to circle center
     float lec = sqrtf((ex-center.x)*(ex-center.x) + (ey-center.y)*(ey-center.y)); // Distance e to circle center
    
-    //std::cout <<"Gkiri:get_line_circle_intersection  lec " << lec <<"RHO " << RHO  << "arc radius " << radius << std::endl;
+    //std::cout <<"get_line_circle_intersection  lec " << lec <<"RHO " << RHO  << "arc radius " << radius << std::endl;
 
     if (lec < RHO) { // Intersection
         float dt = sqrtf(RHO*RHO - lec*lec); // Distance to to circle intersection point
@@ -190,7 +190,7 @@ int FindLineCircleIntersections(Point point1, Point point2,Point center, double 
 {
 
     #if ARC_DEBUG
-    std::cout <<"Gkiri:FindLineCircleIntersections line start.x= " << point1.x <<"linestart.y " << point1.y <<"lineend.x " <<point2.x <<"lineend.y " <<point2.y  << std::endl;
+    std::cout <<"FindLineCircleIntersections line start.x= " << point1.x <<"linestart.y " << point1.y <<"lineend.x " <<point2.x <<"lineend.y " <<point2.y  << std::endl;
     #endif
 
     double dx, dy, A, B, C, det, t;
@@ -205,7 +205,7 @@ int FindLineCircleIntersections(Point point1, Point point2,Point center, double 
 
     det = B * B - 4 * A * C;
     #if ARC_DEBUG
-    std::cout <<"Gkiri:FindLineCircleIntersections DET= " << det << "line distance"<< sqrt(A)<< "Radius= "<< radius << "centerX= " <<center.x << "centerY= " << center.y<< std::endl;
+    std::cout <<"FindLineCircleIntersections DET= " << det << "line distance"<< sqrt(A)<< "Radius= "<< radius << "centerX= " <<center.x << "centerY= " << center.y<< std::endl;
     #endif
 
     if(sqrt(A)<0.03) //Corner case for small lines
@@ -213,7 +213,7 @@ int FindLineCircleIntersections(Point point1, Point point2,Point center, double 
         //Corner case for small lines-Ignoring small lines
         intersection1 = Point(-1, -1);
         intersection2 = Point(-1, -1);
-        //std::cout <<"Gkiri:FindLineCircleIntersections  NEGLIGIBLE LINE"  << std::endl;
+        //std::cout <<"FindLineCircleIntersections  NEGLIGIBLE LINE"  << std::endl;
         return 0;
     }
 
@@ -257,14 +257,14 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
     if(is_line_colliding_circle(line.start_point,line.end_point,arc.center,arc.radius))
     {
         #if ARC_DEBUG
-        std::cout <<"Gkiri:is_line_colliding_circle COLLISION DETECTED "  << std::endl;
+        std::cout <<"is_line_colliding_circle COLLISION DETECTED "  << std::endl;
         #endif
 
     }
     else{
         #if ARC_DEBUG
-        std::cout <<"Gkiri:is_line_colliding_circle COLLISION FREE "  << std::endl;
-        std::cout <<"Alvaro:lineArcIntersection> start.x " << arc.start_point.x << "start.y "  <<  arc.start_point.y  <<"end.x= "  << arc.end_point.x << " end.y"  <<  arc.end_point.y <<std::endl;
+        std::cout <<"is_line_colliding_circle COLLISION FREE "  << std::endl;
+        std::cout <<"lineArcIntersection> start.x " << arc.start_point.x << "start.y "  <<  arc.start_point.y  <<"end.x= "  << arc.end_point.x << " end.y"  <<  arc.end_point.y <<std::endl;
         #endif
 
         return false;//return false as there is no collision so no further arc checks needed
@@ -275,8 +275,8 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
 
     ret_val=FindLineCircleIntersections(line.start_point,line.end_point,arc.center,arc.radius,intersection1,intersection2);
     #if ARC_DEBUG
-    std::cout <<"Gkiri:FindLineCircle**  intersect1.x " << intersection1.x <<" intersect1.y " << intersection1.y << std::endl;
-    std::cout <<"Gkiri:FindLineCircle** intersect2.x " << intersection2.x <<" intersect2.y " << intersection2.y << std::endl;
+    std::cout <<"FindLineCircle**  intersect1.x " << intersection1.x <<" intersect1.y " << intersection1.y << std::endl;
+    std::cout <<"FindLineCircle** intersect2.x " << intersection2.x <<" intersect2.y " << intersection2.y << std::endl;
     #endif
 
     intersect_points.push_back(intersection1);
@@ -285,12 +285,12 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
     test_param=calculate_arc_drawing_angles(arc);  
 
     #if ARC_DEBUG
-    std::cout <<"Alvaro:lineArcIntersection> " << "Start_angle= "<<test_param.start_angle <<" end_angle= " << test_param.end_angle << std::endl;
+    std::cout <<"lineArcIntersection> " << "Start_angle= "<<test_param.start_angle <<" end_angle= " << test_param.end_angle << std::endl;
     #endif
 
     if(ret_val==0){
 
-        //std::cout <<"Gkiri:lineArcIntersection No intersection "  << std::endl;
+        //std::cout <<"lineArcIntersection No intersection "  << std::endl;
         return false;
 
     }
@@ -320,7 +320,7 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
             beta = -beta;
         }
         #if ARC_DEBUG
-        std::cout <<"Gkiri:lineArcIntersection =beta angle " << beta <<"Start_angle= "<<test_param.start_angle <<" end_angle= " << test_param.end_angle << std::endl;
+        std::cout <<"lineArcIntersection =beta angle " << beta <<"Start_angle= "<<test_param.start_angle <<" end_angle= " << test_param.end_angle << std::endl;
         #endif
 
         if(test_param.end_angle>=360){
@@ -328,7 +328,7 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
             if((test_param.end_angle-360 > beta)  || ( test_param.start_angle < beta)){
                 
                 #if ARC_DEBUG
-                std::cout <<"Gkiri:lineArcIntersection COLLISIONX ret_val==2  LSR 2 intersection1.x= " << intersection1.x << " intersection1.y = " << intersection1.y << std::endl;
+                std::cout <<"lineArcIntersection COLLISIONX ret_val==2  LSR 2 intersection1.x= " << intersection1.x << " intersection1.y = " << intersection1.y << std::endl;
                 #endif
                 
                 return true;
@@ -336,7 +336,7 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
             }
             else{
                  #if ARC_DEBUG
-                 std::cout <<"Gkiri:lineArcIntersection NO COLLISIONX ret_val==2  LSR 2 intersection1.x= " << intersection1.x << " intersection1.y = " << intersection1.y << std::endl;
+                 std::cout <<"lineArcIntersection NO COLLISIONX ret_val==2  LSR 2 intersection1.x= " << intersection1.x << " intersection1.y = " << intersection1.y << std::endl;
                  #endif
                     final_flag= false;
 
@@ -345,14 +345,14 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
             if((beta >= test_param.start_angle) || (beta < test_param.end_angle))
             {
                     #if ARC_DEBUG
-                    std::cout <<"Gkiri:lineArcIntersection COLLISION2X ret_val==2  intersection1.x= " << intersection1.x << " intersection1.y = " << intersection1.y << std::endl;
+                    std::cout <<"lineArcIntersection COLLISION2X ret_val==2  intersection1.x= " << intersection1.x << " intersection1.y = " << intersection1.y << std::endl;
                     #endif
 
                     return true; 
             }
             else {  
                     #if ARC_DEBUG
-                    std::cout <<"Gkiri:lineArcIntersection NO COLLISION2X ret_val==2  LSR 2 intersection1.x= " << intersection1.x << " intersection1.y = " << intersection1.y << std::endl; 
+                    std::cout <<"lineArcIntersection NO COLLISION2X ret_val==2  LSR 2 intersection1.x= " << intersection1.x << " intersection1.y = " << intersection1.y << std::endl; 
                     #endif
 
                     final_flag= false;  //check for 2nd point too 
@@ -373,7 +373,7 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
         }
 
         #if ARC_DEBUG
-        std::cout <<"Gkiri:lineArcIntersection =beta angle " << beta <<"Start_angle= "<<test_param.start_angle <<" end_angle= " << test_param.end_angle << std::endl;
+        std::cout <<"lineArcIntersection =beta angle " << beta <<"Start_angle= "<<test_param.start_angle <<" end_angle= " << test_param.end_angle << std::endl;
         #endif
 
        if(test_param.end_angle>=360){
@@ -381,7 +381,7 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
             if((test_param.end_angle-360 > beta2) || ( test_param.start_angle < beta2)){
                 
                 #if ARC_DEBUG
-                std::cout <<"Gkiri:lineArcIntersection COLLISIONX ret_val==2  LSR 2 intersection2.x= " << intersection2.x << " intersection2.y = " << intersection2.y << std::endl;
+                std::cout <<"lineArcIntersection COLLISIONX ret_val==2  LSR 2 intersection2.x= " << intersection2.x << " intersection2.y = " << intersection2.y << std::endl;
                 #endif
 
                 return true;
@@ -389,7 +389,7 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
             }
             else{
                  #if ARC_DEBUG
-                 std::cout <<"Gkiri:lineArcIntersection NO COLLISIONX ret_val==2  LSR 2 intersection2.x= " << intersection2.x << " intersection2.y = " << intersection2.y << std::endl;
+                 std::cout <<"lineArcIntersection NO COLLISIONX ret_val==2  LSR 2 intersection2.x= " << intersection2.x << " intersection2.y = " << intersection2.y << std::endl;
                  #endif
 
                 final_flag= false;
@@ -399,14 +399,14 @@ bool lineArcIntersection_prof(struct arc_extract line,struct arc_extract arc,std
             if((beta2 >= test_param.start_angle) || (beta2 < test_param.end_angle))
             {
                     #if ARC_DEBUG
-                    std::cout <<"Gkiri:lineArcIntersection COLLISION2X ret_val==2  intersection2.x= " << intersection2.x << " intersection1.y = " << intersection2.y << std::endl;
+                    std::cout <<"lineArcIntersection COLLISION2X ret_val==2  intersection2.x= " << intersection2.x << " intersection1.y = " << intersection2.y << std::endl;
                     #endif
 
                     return true; 
             }
             else {
                     #if ARC_DEBUG
-                    std::cout <<"Gkiri:lineArcIntersection NO COLLISION2X ret_val==2  LSR 2 intersection2.x= " << intersection2.x << " intersection1.y = " << intersection2.y << std::endl; 
+                    std::cout <<"lineArcIntersection NO COLLISION2X ret_val==2  LSR 2 intersection2.x= " << intersection2.x << " intersection1.y = " << intersection2.y << std::endl; 
                     #endif
                     final_flag= false;  //check for 2nd point too 
             }
@@ -437,8 +437,8 @@ bool  Construct_Bounding_Box(Polygon& input , Polygon& output)
                                      [](const Point& lhs, const Point& rhs) {
                                         return lhs.y < rhs.y;
                                      });
-    //std::cout <<"Gkiri:Construct_Bounding_Box Min-Points.x " << xExtremes.first->x <<" Min-Points.y " << yExtremes.first->y << std::endl;
-    //std::cout <<"Gkiri:Construct_Bounding_Box Max-Points.x " << xExtremes.second->x <<" Max-Points.y " << yExtremes.second->y << std::endl;
+    //std::cout <<"Construct_Bounding_Box Min-Points.x " << xExtremes.first->x <<" Min-Points.y " << yExtremes.first->y << std::endl;
+    //std::cout <<"Construct_Bounding_Box Max-Points.x " << xExtremes.second->x <<" Max-Points.y " << yExtremes.second->y << std::endl;
 
     /*Direct points */
     Point Top_Right,Bottom_Left;//caluclated above
@@ -559,7 +559,7 @@ bool  Process_Box_line_check_obstacles(std::vector<Polygon>& obstacle_list,struc
 
     if(point_lies_inside1 && point_lies_inside2)
     {
-        //std::cout <<"Gkiri:Both points of line Lies inside Bounding Box" << std::endl;
+        //std::cout <<"Both points of line Lies inside Bounding Box" << std::endl;
         return true;//consider it as colliding because line is inside Bounding Box
 
     }
@@ -606,12 +606,12 @@ bool  Highlevel_Box_dubins_check(std::vector<Polygon>& obstacle_list,struct arc_
 
             if(Intersection)
             {
-                //std::cout <<"Gkiri:Highlevel_Box_dubins_check ARC COLLISION  " << std::endl;
+                //std::cout <<"Highlevel_Box_dubins_check ARC COLLISION  " << std::endl;
                 return true;
             }
             else
             {
-                //std::cout <<"Gkiri:Highlevel_Box_dubins_check NO ARC COLLISION  " << std::endl;
+                //std::cout <<"Highlevel_Box_dubins_check NO ARC COLLISION  " << std::endl;
                 final_flag= false;
             }
                 
@@ -622,12 +622,12 @@ bool  Highlevel_Box_dubins_check(std::vector<Polygon>& obstacle_list,struct arc_
 
             if(Intersection)
             {
-                //std::cout <<"Gkiri:Highlevel_Box_dubins_check LINE COLLISION  " << std::endl;
+                //std::cout <<"Highlevel_Box_dubins_check LINE COLLISION  " << std::endl;
                 return true;
             }
             else
             {
-                //std::cout <<"Gkiri:Highlevel_Box_dubins_check NO LINE COLLISION  " << std::endl;
+                //std::cout <<"Highlevel_Box_dubins_check NO LINE COLLISION  " << std::endl;
                 final_flag= false;
             }
             
@@ -638,12 +638,12 @@ bool  Highlevel_Box_dubins_check(std::vector<Polygon>& obstacle_list,struct arc_
 
             if(Intersection)
             {
-                //std::cout <<"Gkiri:Highlevel_Box_dubins_check ARC COLLISION  " << std::endl;
+                //std::cout <<"Highlevel_Box_dubins_check ARC COLLISION  " << std::endl;
                 return true;
             }
             else
             {
-                //std::cout <<"Gkiri:Highlevel_Box_dubins_check NO ARC COLLISION  " << std::endl;
+                //std::cout <<"Highlevel_Box_dubins_check NO ARC COLLISION  " << std::endl;
                 final_flag= false;
             }
 
@@ -688,7 +688,7 @@ bool  Process_Box_arc_check_obstacles(std::vector<Polygon>& obstacle_list,struct
 
     if(point_lies_inside1 && point_lies_inside2)
     {
-        std::cout <<"Gkiri:Both points of ARC Lies inside Bounding Box" << std::endl;
+        std::cout <<"Both points of ARC Lies inside Bounding Box" << std::endl;
         return true;//consider it as colliding because line is inside Bounding Box
 
     }
@@ -734,7 +734,7 @@ bool narrow_polygon_obstacles_arc_check(std::vector<Polygon>& obstacle_list,stru
                 construct_line_structure(line_data,obstacle_list[i][j],obstacle_list[i][0]);
                 intersection=lineArcIntersection_prof(line_data,arc,intersect_points);
                 if(intersection){
-                    //std::cout <<"Gkiri:NARROW intersection at start_point.x= " << i <<"---"<< line_data.start_point.x << "start_point.y= " << line_data.start_point.y <<"end_point.x= " << line_data.end_point.x  << " end_point.y = " << line_data.end_point.y << std::endl; 
+                    //std::cout <<"NARROW intersection at start_point.x= " << i <<"---"<< line_data.start_point.x << "start_point.y= " << line_data.start_point.y <<"end_point.x= " << line_data.end_point.x  << " end_point.y = " << line_data.end_point.y << std::endl; 
                     return true;
                 }
                    
@@ -743,7 +743,7 @@ bool narrow_polygon_obstacles_arc_check(std::vector<Polygon>& obstacle_list,stru
                 construct_line_structure(line_data,obstacle_list[i][j],obstacle_list[i][j+1]);
                 intersection=lineArcIntersection_prof(line_data,arc ,intersect_points);
                 if(intersection){
-                    //std::cout <<"Gkiri:NARROW intersection at start_point.x= " << i <<"---"<< line_data.start_point.x << "start_point.y= " << line_data.start_point.y <<"end_point.x= " << line_data.end_point.x  << " end_point.y = " << line_data.end_point.y << std::endl; 
+                    //std::cout <<"NARROW intersection at start_point.x= " << i <<"---"<< line_data.start_point.x << "start_point.y= " << line_data.start_point.y <<"end_point.x= " << line_data.end_point.x  << " end_point.y = " << line_data.end_point.y << std::endl; 
                     return true;
                 }
             }
@@ -792,7 +792,7 @@ bool Global_Line_check(std::vector<Polygon>& obstacle_list,struct arc_extract& s
     if(!line_collision){
 
         #if COLLISION_DEBUG
-        //std::cout <<"Gkiri:Global_Line_check BOX is Not colliding " << std::endl;
+        //std::cout <<"Global_Line_check BOX is Not colliding " << std::endl;
         #endif
 
         return false;
@@ -800,14 +800,14 @@ bool Global_Line_check(std::vector<Polygon>& obstacle_list,struct arc_extract& s
     else {
 
         #if COLLISION_DEBUG
-        //std::cout <<"Gkiri:Global_Line_check BOX is colliding " << std::endl;
+        //std::cout <<"Global_Line_check BOX is colliding " << std::endl;
         #endif
 
         narrow_collision = narrow_polygon_obstacles_line_check(obstacle_list,segment);
         if(narrow_collision){
 
             #if COLLISION_DEBUG
-            //std::cout <<"Gkiri:Global_Line_check NARROW polygon is also colliding " << std::endl;
+            //std::cout <<"Global_Line_check NARROW polygon is also colliding " << std::endl;
             #endif
 
             return true;
@@ -815,7 +815,7 @@ bool Global_Line_check(std::vector<Polygon>& obstacle_list,struct arc_extract& s
         else{
 
             #if COLLISION_DEBUG
-            //std::cout <<"Gkiri:Global_Line_check NARROW polygon is not colliding " << std::endl;
+            //std::cout <<"Global_Line_check NARROW polygon is not colliding " << std::endl;
             #endif
 
             return false;
@@ -834,7 +834,7 @@ bool Global_Arc_check(std::vector<Polygon>& obstacle_list,struct arc_extract& se
     if(!arc_collision){
 
         #if COLLISION_DEBUG
-        std::cout <<"Gkiri:Global_Arc_check BOX is Not colliding " << std::endl;
+        std::cout <<"Global_Arc_check BOX is Not colliding " << std::endl;
         #endif
 
         return false;
@@ -842,14 +842,14 @@ bool Global_Arc_check(std::vector<Polygon>& obstacle_list,struct arc_extract& se
     else {
 
         #if COLLISION_DEBUG
-        std::cout <<"Gkiri:Global_Arc_check BOX is colliding " << std::endl;
+        std::cout <<"Global_Arc_check BOX is colliding " << std::endl;
         #endif
 
         narrow_collision = narrow_polygon_obstacles_arc_check(obstacle_list,segment);
         if(narrow_collision){
 
             #if COLLISION_DEBUG
-            std::cout <<"Gkiri:Global_Arc_check NARROW polygon is also colliding " << std::endl;
+            std::cout <<"Global_Arc_check NARROW polygon is also colliding " << std::endl;
             #endif
 
             return true;
@@ -857,7 +857,7 @@ bool Global_Arc_check(std::vector<Polygon>& obstacle_list,struct arc_extract& se
         else{
 
             #if COLLISION_DEBUG
-            std::cout <<"Gkiri:Global_Arc_check NARROW polygon is not colliding " << std::endl;
+            std::cout <<"Global_Arc_check NARROW polygon is not colliding " << std::endl;
             #endif
 
             return false;
@@ -900,17 +900,17 @@ bool Detect_point_liesin_polygon(Point pt,std::vector<Polygon> cv_poly_list)
         {
             case 1:  //1 = (point lies inside polygon)
 
-                //std::cout << "Gkiri:case 111111111 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
+                //std::cout << "case 111111111 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
                 return true;
                 break;
             case 0:  //0 (point lies on edge of polygon)
 
-                //std::cout << "Gkiri:case 00000000 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
+                //std::cout << "case 00000000 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
                 return true;
                 break;
             case -1:   //-1 (point lies outside polygon)
 
-                //std::cout << "Gkiri:case -1-1-1-1-1-1-1 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
+                //std::cout << "case -1-1-1-1-1-1-1 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
                 if((dist< 0.0 && dist > -10.0))
                 {
                     return true;//Point outside polygon but bit closer to edge so remove this with some threshold distance   
@@ -921,7 +921,7 @@ bool Detect_point_liesin_polygon(Point pt,std::vector<Polygon> cv_poly_list)
                 break;
         } 
 
-       // std::cout << "Gkiri:point_polygon Outside polygon -----------------result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y <<  std::endl;
+       // std::cout << "point_polygon Outside polygon -----------------result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y <<  std::endl;
         
     }//outer loop
 

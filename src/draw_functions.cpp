@@ -354,17 +354,17 @@ bool point_liesin_polygon(Point pt,std::vector<Polygon> cv_poly_list)
         {
             case 1:  //1 = (point lies inside polygon)
 
-                std::cout << "Gkiri:case 111111111 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
+                std::cout << "case 111111111 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
                 return true;
                 break;
             case 0:  //0 (point lies on edge of polygon)
 
-                std::cout << "Gkiri:case 00000000 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
+                std::cout << "case 00000000 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
                 return true;
                 break;
             case -1:   //-1 (point lies outside polygon)
 
-                std::cout << "Gkiri:case -1-1-1-1-1-1-1 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
+                std::cout << "case -1-1-1-1-1-1-1 Inside polygon result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y<<  std::endl;
                 if((dist< 0.0 && dist > -10.0))
                 {
                     return true;//Point outside polygon but bit closer to edge so remove this with some threshold distance   
@@ -375,7 +375,7 @@ bool point_liesin_polygon(Point pt,std::vector<Polygon> cv_poly_list)
                 break;
         } 
 
-        std::cout << "Gkiri:point_polygon Outside polygon -----------------result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y <<  std::endl;
+        std::cout << "point_polygon Outside polygon -----------------result= " << result << "measdistance= " << dist << "test point (x,y)= "<<test_pt.x << " , " << test_pt.y <<  std::endl;
         
     }//outer loop
 
@@ -416,7 +416,7 @@ void draw_motion_planning(const std::vector<Polygon>& obstacle_list,img_map_def 
         {
             draw_point(random_points[z], *map_param); 
             count++;
-            std::cout << "Gkiri :: Motion sample After count= " << count <<std::endl; 
+            std::cout << "ambikeya :: Motion sample After count= " << count <<std::endl; 
         }
            
     }
